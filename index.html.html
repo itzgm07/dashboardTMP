@@ -1,0 +1,437 @@
+
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard de Métricas de Staffing — Standalone</title>
+  <style>
+    :root {
+      --brand: #76BC21;
+      --bg: #ffffff;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --text: #111827;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color: var(--text);
+      background: var(--bg);
+    }
+    header {
+      position: sticky; top: 0; background: rgba(255,255,255,0.9);
+      backdrop-filter: blur(6px);
+      border-bottom: 1px solid var(--border);
+      z-index: 10;
+    }
+    .container { max-width: 1400px; margin: 0 auto; padding: 12px 16px; }
+    .brand { display:flex; gap:12px; align-items:center; }
+    .brand-badge { width:40px; height:40px; border-radius:16px; background: var(--brand); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; }
+    h1 { font-size: 22px; margin:0; }
+    .muted { color: var(--muted); font-size: 12px; margin: 2px 0 0; }
+    .grid { display:grid; gap:16px; }
+    .grid.kpi { grid-template-columns: repeat(1, minmax(0,1fr)); }
+    @media (min-width: 768px) { .grid.kpi { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+    @media (min-width: 1024px) { .grid.kpi { grid-template-columns: repeat(4, minmax(0,1fr)); } }
+    .row-3 { grid-template-columns: repeat(1, minmax(0,1fr)); }
+    @media (min-width: 1024px) { .row-3 { grid-template-columns: repeat(3, minmax(0,1fr)); } }
+    .row-2 { grid-template-columns: repeat(1, minmax(0,1fr)); }
+    @media (min-width: 1024px) { .row-2 { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .card h3 { font-size: 14px; margin: 0; }
+    .card-header { padding: 12px 14px; border-bottom: 1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+    .card-content { padding: 12px 14px; height: 320px; }
+    .kpi .card-content { height: auto; }
+    .kpi-value { font-size: 28px; font-weight: 700; }
+    .kpi-sub { font-size: 12px; color: var(--muted); }
+    .footer { margin-top: 24px; font-size: 12px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+      <div class="brand">
+        <div class="brand-badge">S</div>
+        <div>
+          <h1>Dashboard de Métricas de Staffing</h1>
+          <div class="muted">Standalone para compartir — datos de ejemplo</div>
+        </div>
+      </div>
+      <div class="muted">Periodo: Últimos 90 días (mock)</div>
+    </div>
+  </header>
+
+  <main class="container" style="padding-top: 16px; padding-bottom: 28px;">
+    <!-- KPIs -->
+    <div id="kpis" class="grid kpi"></div>
+
+    <!-- Row: Funnel + Calidad + Demanda vs Oferta -->
+    <div id="rowTop" class="grid row-3" style="margin-top:16px;"></div>
+
+    <!-- Row: Fill Rate trend + Lead/Cycle -->
+    <div id="rowMid1" class="grid row-2" style="margin-top:16px;"></div>
+
+    <!-- Row: Demanda por conocimiento + Liberaciones por rol -->
+    <div id="rowMid2" class="grid row-3" style="margin-top:16px;"></div>
+
+    <!-- Row: Liberaciones por periodo + Aging + Origen cobertura -->
+    <div id="rowMid3" class="grid row-3" style="margin-top:16px;"></div>
+
+    <!-- Row: Costo banca + finiquito -->
+    <div id="rowBottom" style="margin-top:16px;"></div>
+
+    <div class="footer">
+      *Definiciones sugeridas: Fill rate = asignaciones/solicitudes; Lead time = solicitud→primer envío; Cycle time = solicitud→asignación;
+      Staffing de calidad = composición por afinidad (mismo cliente/industria) y no asignados; Origen de cobertura = % Interno vs % Externo.
+    </div>
+  </main>
+
+  <!-- React + ReactDOM + Recharts + Babel -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel">
+    const {
+      ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+      PieChart, Pie, Cell, Legend, ReferenceLine, FunnelChart, Funnel, LabelList, AreaChart, Area
+    } = Recharts;
+
+    // ===== Mock data =====
+    const weekly = [
+      { wk: "Sem 1", demand: 42, supply: 38, filled: 30, leadAvg: 10, cycleAvg: 15, qualityRate: 72, releases: 7, benchCost: 240000 },
+      { wk: "Sem 2", demand: 45, supply: 40, filled: 33, leadAvg: 9, cycleAvg: 14, qualityRate: 74, releases: 6, benchCost: 235000 },
+      { wk: "Sem 3", demand: 47, supply: 44, filled: 35, leadAvg: 11, cycleAvg: 16, qualityRate: 75, releases: 8, benchCost: 250000 },
+      { wk: "Sem 4", demand: 50, supply: 46, filled: 37, leadAvg: 10, cycleAvg: 15, qualityRate: 76, releases: 5, benchCost: 245000 },
+      { wk: "Sem 5", demand: 48, supply: 45, filled: 36, leadAvg: 9, cycleAvg: 14, qualityRate: 77, releases: 6, benchCost: 242000 },
+      { wk: "Sem 6", demand: 51, supply: 49, filled: 39, leadAvg: 8, cycleAvg: 13, qualityRate: 79, releases: 7, benchCost: 238000 },
+      { wk: "Sem 7", demand: 49, supply: 47, filled: 38, leadAvg: 9, cycleAvg: 13, qualityRate: 80, releases: 6, benchCost: 232000 },
+      { wk: "Sem 8", demand: 46, supply: 45, filled: 35, leadAvg: 8, cycleAvg: 12, qualityRate: 81, releases: 7, benchCost: 228000 },
+      { wk: "Sem 9", demand: 44, supply: 46, filled: 34, leadAvg: 9, cycleAvg: 12, qualityRate: 82, releases: 8, benchCost: 225000 },
+      { wk: "Sem 10", demand: 43, supply: 44, filled: 33, leadAvg: 9, cycleAvg: 12, qualityRate: 83, releases: 6, benchCost: 220000 },
+      { wk: "Sem 11", demand: 41, supply: 45, filled: 32, leadAvg: 8, cycleAvg: 11, qualityRate: 84, releases: 5, benchCost: 218000 },
+      { wk: "Sem 12", demand: 40, supply: 44, filled: 31, leadAvg: 8, cycleAvg: 11, qualityRate: 85, releases: 6, benchCost: 216000 },
+    ];
+
+    const demandaConocimiento = [
+      { conoc: "Conoc1", Basico: 60, Intermedio: 20, Avanzado: 10 },
+      { conoc: "Conoc2", Basico: 40, Intermedio: 25, Avanzado: 15 },
+      { conoc: "Conoc3", Basico: 30, Intermedio: 18, Avanzado: 8 },
+    ];
+
+    const liberacionesRol = [
+      { rol: "BA", liberaciones: 12 },
+      { rol: "Tester", liberaciones: 18 },
+      { rol: "PL", liberaciones: 10 },
+    ];
+
+    const liberacionesPeriodo = [
+      { dias: 7, valor: 7 },
+      { dias: 14, valor: 14 },
+      { dias: 21, valor: 21 },
+    ];
+
+    const agingEtapas = [
+      { etapa: "Sourcing", dias: 3.2 },
+      { etapa: "Screening", dias: 2.4 },
+      { etapa: "Entrevista técnica", dias: 4.8 },
+      { etapa: "Con cliente", dias: 5.3 },
+      { etapa: "Oferta/Cierre", dias: 2.1 },
+    ];
+
+    const origenCoberturaSimple = [
+      { tipo: "Interno", porcentaje: 71.4 },
+      { tipo: "Externo", porcentaje: 28.6 },
+    ];
+
+    const costoBancaFiniquito = [
+      { mes: "Nov", Banca: 150000, Finiquito: 18000 },
+      { mes: "Dic", Banca: 130000, Finiquito: 15000 },
+      { mes: "Ene", Banca: 115000, Finiquito: 12000 },
+      { mes: "Feb", Banca: 80000, Finiquito: 6000 },
+    ];
+
+    const funnelEmbudo = [
+      { name: "Requerimientos", value: 520 },
+      { name: "Candidatos postulados", value: 1180 },
+      { name: "Entrevistas técnicas", value: 680 },
+      { name: "Enviados a cliente", value: 420 },
+      { name: "Ofertas", value: 210 },
+      { name: "Asignaciones", value: 180 },
+    ];
+
+    const calidadCategorias = [
+      { name: "Mismo cliente", value: 38 },
+      { name: "Misma industria, dif. cliente", value: 32 },
+      { name: "Dif. industria, dif. cliente", value: 20 },
+      { name: "No pude asignar", value: 10 },
+    ];
+
+    const pieColors = ["#76BC21", "#2E7D32", "#1976D2", "#F44336", "#9C27B0", "#FF9800"];
+
+    // helpers
+    const money = (n) => n.toLocaleString("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 });
+    const pct = (n,d) => (d === 0 ? 0 : Math.round((n/d)*100));
+
+    // Derived series
+    const totals = weekly.reduce((acc, d) => ({
+      demand: acc.demand + d.demand,
+      supply: acc.supply + d.supply,
+      filled: acc.filled + d.filled,
+      leadAvg: acc.leadAvg + d.leadAvg,
+      cycleAvg: acc.cycleAvg + d.cycleAvg,
+      quality: acc.quality + d.qualityRate,
+      releases: acc.releases + d.releases,
+      benchCost: acc.benchCost + d.benchCost
+    }), { demand:0, supply:0, filled:0, leadAvg:0, cycleAvg:0, quality:0, releases:0, benchCost:0 });
+
+    totals.leadAvg = Math.round(totals.leadAvg / weekly.length);
+    totals.cycleAvg = Math.round(totals.cycleAvg / weekly.length);
+    totals.quality = Math.round(totals.quality / weekly.length);
+    const fillRate = pct(totals.filled, totals.demand);
+
+    const fillRateTrend = weekly.map(d => ({ wk: d.wk, Reqs: d.demand, Cubiertas: d.filled, Pendientes: Math.max(d.demand - d.filled, 0) }));
+    const leadCycleTime = weekly.map(d => ({ wk: d.wk, lead: d.leadAvg, cycle: d.cycleAvg }));
+    const demandaVsOferta = weekly.map(d => ({ wk: d.wk, demanda: d.demand, oferta: d.supply, cubiertos: d.filled }));
+
+    // Components
+    const Card = ({ title, right, children, className, contentClass }) => (
+      <div className={"card " + (className || "")}>
+        <div className="card-header">
+          <h3>{title}</h3>
+          <div>{right || null}</div>
+        </div>
+        <div className={"card-content " + (contentClass || "")}>{children}</div>
+      </div>
+    );
+
+    function App(){
+      return (
+        <>
+          {/* KPIs */}
+          <div className="grid kpi">
+            <div className="card kpi">
+              <div className="card-header"><h3>Fill rate</h3></div>
+              <div className="card-content">
+                <div className="kpi-value">{fillRate}%</div>
+                <div className="kpi-sub">{totals.filled} de {totals.demand} requerimientos cubiertos</div>
+              </div>
+            </div>
+
+            <div className="card kpi">
+              <div className="card-header"><h3>Lead time promedio</h3></div>
+              <div className="card-content">
+                <div className="kpi-value">{totals.leadAvg} d</div>
+                <div className="kpi-sub">Solicitud → primer envío</div>
+              </div>
+            </div>
+
+            <div className="card kpi">
+              <div className="card-header"><h3>Cycle time promedio</h3></div>
+              <div className="card-content">
+                <div className="kpi-value">{totals.cycleAvg} d</div>
+                <div className="kpi-sub">Solicitud → asignación</div>
+              </div>
+            </div>
+
+            <div className="card kpi">
+              <div className="card-header"><h3>Costo de banca</h3></div>
+              <div className="card-content">
+                <div className="kpi-value">{money(totals.benchCost)}</div>
+                <div className="kpi-sub">Acumulado periodo</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Funnel + Calidad + Demanda vs Oferta */}
+          <div className="grid row-3" style={{marginTop:16}}>
+            <Card title="Funnel de Staffing">
+              <ResponsiveContainer width="100%" height="100%">
+                <FunnelChart>
+                  <Tooltip/>
+                  <Funnel dataKey="value" data={funnelEmbudo}>
+                    {funnelEmbudo.map((e,i)=>(<Cell key={i} fill={pieColors[i % pieColors.length]} />))}
+                    <LabelList position="right" fill="#111827" stroke="none" dataKey="name" />
+                    <LabelList position="center" fill="#fff" stroke="none" dataKey="value" />
+                  </Funnel>
+                </FunnelChart>
+              </ResponsiveContainer>
+            </Card>
+
+            <Card title="Staffing de calidad">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={calidadCategorias} dataKey="value" nameKey="name" innerRadius={60} outerRadius={90}>
+                    {calidadCategorias.map((_, i) => (<Cell key={i} fill={pieColors[i % pieColors.length]} />))}
+                  </Pie>
+                  <Tooltip/>
+                  <Legend/>
+                </PieChart>
+              </ResponsiveContainer>
+            </Card>
+
+            <Card title="Demanda vs Oferta">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={demandaVsOferta} margin={{ left: 10, right: 20, top: 10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="wk" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="demanda" stroke="#F44336" strokeWidth={2} />
+                  <Line type="monotone" dataKey="oferta" stroke="#1976D2" strokeWidth={2} />
+                  <Line type="monotone" dataKey="cubiertos" stroke="#76BC21" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            </Card>
+          </div>
+
+          {/* Fill Rate trend + Lead / Cycle */}
+          <div className="grid row-2" style={{marginTop:16}}>
+            <Card title="Fill rate (tendencia)">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={fillRateTrend}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="wk" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="Reqs" stroke="#1976D2" strokeWidth={2} />
+                  <Line type="monotone" dataKey="Cubiertas" stroke="#76BC21" strokeWidth={2} />
+                  <Line type="monotone" dataKey="Pendientes" stroke="#F44336" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            </Card>
+
+            <Card title="Lead time / Cycle time">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={leadCycleTime}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="wk" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <ReferenceLine y={10} stroke="#9CA3AF" strokeDasharray="4 4" label={{ value: "LT objetivo 10 d", position: "right" }} />
+                  <Line type="monotone" dataKey="lead" stroke="#1976D2" strokeWidth={2} name="Lead time" />
+                  <Line type="monotone" dataKey="cycle" stroke="#76BC21" strokeWidth={2} name="Cycle time" />
+                </LineChart>
+              </ResponsiveContainer>
+            </Card>
+          </div>
+
+          {/* Demanda por conocimiento + Liberaciones por rol */}
+          <div className="grid row-3" style={{marginTop:16}}>
+            <Card title="Demanda por conocimiento y seniority" className="span-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={demandaConocimiento} margin={{ left: 10, right: 20, top: 10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="conoc" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="Basico" fill="#9CA3AF" />
+                  <Bar dataKey="Intermedio" fill="#1976D2" />
+                  <Bar dataKey="Avanzado" fill="#2E7D32" />
+                </BarChart>
+              </ResponsiveContainer>
+            </Card>
+
+            <Card title="Liberaciones por rol">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={liberacionesRol}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="rol" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="liberaciones" fill="#F44336" />
+                </BarChart>
+              </ResponsiveContainer>
+            </Card>
+          </div>
+
+          {/* Liberaciones periodo + Aging + Origen cobertura */}
+          <div className="grid row-3" style={{marginTop:16}}>
+            <Card title="Liberaciones por periodo">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={liberacionesPeriodo}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="dias" tickFormatter={(v)=> v + ' d'} />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="valor" fill="#F44336" />
+                </BarChart>
+              </ResponsiveContainer>
+            </Card>
+
+            <Card title="Aging de etapas (días)">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={agingEtapas} margin={{ left: 10, right: 10, top: 10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="etapa" interval={0} />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="dias">
+                    {agingEtapas.map((_, i) => (<Cell key={i} fill={pieColors[i % pieColors.length]} />))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </Card>
+
+            <Card title="Origen de la cobertura">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={origenCoberturaSimple} layout="vertical" margin={{ left: 30, right: 20, top: 10, bottom: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => v + '%'} />
+                  <YAxis type="category" dataKey="tipo" />
+                  <Tooltip formatter={(v) => v + '%'} />
+                  <Bar dataKey="porcentaje">
+                    {origenCoberturaSimple.map((_, i) => (<Cell key={i} fill={i === 0 ? "#2E7D32" : "#1976D2"} />))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </Card>
+          </div>
+
+          {/* Costo banca + finiquito */}
+          <div style={{marginTop:16}}>
+            <Card title="Costo de banca + finiquito">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={costoBancaFiniquito}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="mes" />
+                  <YAxis />
+                  <Tooltip formatter={(v)=> money(v)} />
+                  <Legend />
+                  <Bar dataKey="Banca" stackId="x" fill="#1976D2" />
+                  <Bar dataKey="Finiquito" stackId="x" fill="#F44336" />
+                </BarChart>
+              </ResponsiveContainer>
+            </Card>
+          </div>
+        </>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("kpis")).render(<div/>); // placeholder to keep structure
+
+    // Render sections
+    const rootKpis = ReactDOM.createRoot(document.getElementById("kpis"));
+    const rootRowTop = ReactDOM.createRoot(document.getElementById("rowTop"));
+    const rootRowMid1 = ReactDOM.createRoot(document.getElementById("rowMid1"));
+    const rootRowMid2 = ReactDOM.createRoot(document.getElementById("rowMid2"));
+    const rootRowMid3 = ReactDOM.createRoot(document.getElementById("rowMid3"));
+    const rootBottom = ReactDOM.createRoot(document.getElementById("rowBottom"));
+
+    // Instead of rendering piecewise, render the whole App into main container.
+    ReactDOM.createRoot(document.querySelector("main .container, main.container")).render(<App />);
+  </script>
+</body>
+</html>
