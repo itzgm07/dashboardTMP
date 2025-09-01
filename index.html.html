@@ -4,31 +4,15 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dashboard de Métricas de Staffing — Standalone</title>
+  <title>Dashboard de Métricas de Staffing — Chart.js</title>
   <style>
-    :root {
-      --brand: #76BC21;
-      --bg: #ffffff;
-      --muted: #6b7280;
-      --border: #e5e7eb;
-      --text: #111827;
-    }
+    :root { --brand:#76BC21; --muted:#6b7280; --border:#e5e7eb; --text:#111827; }
     * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-      color: var(--text);
-      background: var(--bg);
-    }
-    header {
-      position: sticky; top: 0; background: rgba(255,255,255,0.9);
-      backdrop-filter: blur(6px);
-      border-bottom: 1px solid var(--border);
-      z-index: 10;
-    }
+    body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; color:var(--text); background:#fff; }
+    header { position:sticky; top:0; background:#fff; border-bottom:1px solid var(--border); z-index:10; }
     .container { max-width: 1400px; margin: 0 auto; padding: 12px 16px; }
     .brand { display:flex; gap:12px; align-items:center; }
-    .brand-badge { width:40px; height:40px; border-radius:16px; background: var(--brand); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; }
+    .brand-badge { width:40px; height:40px; border-radius:16px; background:var(--brand); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; }
     h1 { font-size: 22px; margin:0; }
     .muted { color: var(--muted); font-size: 12px; margin: 2px 0 0; }
     .grid { display:grid; gap:16px; }
@@ -39,19 +23,15 @@
     @media (min-width: 1024px) { .row-3 { grid-template-columns: repeat(3, minmax(0,1fr)); } }
     .row-2 { grid-template-columns: repeat(1, minmax(0,1fr)); }
     @media (min-width: 1024px) { .row-2 { grid-template-columns: repeat(2, minmax(0,1fr)); } }
-    .card {
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      background: #fff;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-    }
+    .card { border: 1px solid var(--border); border-radius: 16px; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
     .card h3 { font-size: 14px; margin: 0; }
     .card-header { padding: 12px 14px; border-bottom: 1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
-    .card-content { padding: 12px 14px; height: 320px; }
+    .card-content { padding: 12px 14px; height: 360px; }
     .kpi .card-content { height: auto; }
     .kpi-value { font-size: 28px; font-weight: 700; }
     .kpi-sub { font-size: 12px; color: var(--muted); }
     .footer { margin-top: 24px; font-size: 12px; color: var(--muted); }
+    canvas { width: 100% !important; height: 100% !important; }
   </style>
 </head>
 <body>
@@ -61,31 +41,43 @@
         <div class="brand-badge">S</div>
         <div>
           <h1>Dashboard de Métricas de Staffing</h1>
-          <div class="muted">Standalone para compartir — datos de ejemplo</div>
+          <div class="muted">Interactive (Chart.js) — datos de ejemplo</div>
         </div>
       </div>
       <div class="muted">Periodo: Últimos 90 días (mock)</div>
     </div>
   </header>
 
-  <main class="container" style="padding-top: 16px; padding-bottom: 28px;">
+  <main class="container" style="padding-top:16px; padding-bottom:28px;">
     <!-- KPIs -->
-    <div id="kpis" class="grid kpi"></div>
+    <div class="grid kpi" id="kpis"></div>
 
     <!-- Row: Funnel + Calidad + Demanda vs Oferta -->
-    <div id="rowTop" class="grid row-3" style="margin-top:16px;"></div>
+    <div class="grid row-3" style="margin-top:16px;">
+      <div class="card"><div class="card-header"><h3>Funnel de Staffing</h3></div><div class="card-content"><canvas id="chartFunnel"></canvas></div></div>
+      <div class="card"><div class="card-header"><h3>Staffing de calidad</h3></div><div class="card-content"><canvas id="chartCalidad"></canvas></div></div>
+      <div class="card"><div class="card-header"><h3>Demanda vs Oferta</h3></div><div class="card-content"><canvas id="chartDemandaOferta"></canvas></div></div>
+    </div>
 
     <!-- Row: Fill Rate trend + Lead/Cycle -->
-    <div id="rowMid1" class="grid row-2" style="margin-top:16px;"></div>
+    <div class="grid row-2" style="margin-top:16px;">
+      <div class="card"><div class="card-header"><h3>Fill rate (tendencia)</h3></div><div class="card-content"><canvas id="chartFillTrend"></canvas></div></div>
+      <div class="card"><div class="card-header"><h3>Lead time / Cycle time</h3></div><div class="card-content"><canvas id="chartLeadCycle"></canvas></div></div>
+    </div>
 
     <!-- Row: Demanda por conocimiento + Liberaciones por rol -->
-    <div id="rowMid2" class="grid row-3" style="margin-top:16px;"></div>
+    <div class="grid row-3" style="margin-top:16px;">
+      <div class="card"><div class="card-header"><h3>Demanda por conocimiento y seniority</h3></div><div class="card-content"><canvas id="chartConocimiento"></canvas></div></div>
+      <div class="card"><div class="card-header"><h3>Liberaciones por rol</h3></div><div class="card-content"><canvas id="chartLiberacionesRol"></canvas></div></div>
+      <div class="card"><div class="card-header"><h3>Liberaciones por periodo</h3></div><div class="card-content"><canvas id="chartLiberacionesPeriodo"></canvas></div></div>
+    </div>
 
-    <!-- Row: Liberaciones por periodo + Aging + Origen cobertura -->
-    <div id="rowMid3" class="grid row-3" style="margin-top:16px;"></div>
-
-    <!-- Row: Costo banca + finiquito -->
-    <div id="rowBottom" style="margin-top:16px;"></div>
+    <!-- Row: Aging + Origen cobertura + Costo banca -->
+    <div class="grid row-3" style="margin-top:16px;">
+      <div class="card"><div class="card-header"><h3>Aging de etapas (días)</h3></div><div class="card-content"><canvas id="chartAging"></canvas></div></div>
+      <div class="card"><div class="card-header"><h3>Origen de la cobertura</h3></div><div class="card-content"><canvas id="chartOrigen"></canvas></div></div>
+      <div class="card"><div class="card-header"><h3>Costo de banca + finiquito</h3></div><div class="card-content"><canvas id="chartBench"></canvas></div></div>
+    </div>
 
     <div class="footer">
       *Definiciones sugeridas: Fill rate = asignaciones/solicitudes; Lead time = solicitud→primer envío; Cycle time = solicitud→asignación;
@@ -93,32 +85,25 @@
     </div>
   </main>
 
-  <!-- React + ReactDOM + Recharts + Babel -->
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <script type="text/babel">
-    const {
-      ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-      PieChart, Pie, Cell, Legend, ReferenceLine, FunnelChart, Funnel, LabelList, AreaChart, Area
-    } = Recharts;
-
-    // ===== Mock data =====
+  <!-- Chart.js + plugins -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-funnel@4.0.0/dist/chartjs-chart-funnel.min.js"></script>
+  <script>
+    // ---------- Mock data ----------
     const weekly = [
       { wk: "Sem 1", demand: 42, supply: 38, filled: 30, leadAvg: 10, cycleAvg: 15, qualityRate: 72, releases: 7, benchCost: 240000 },
-      { wk: "Sem 2", demand: 45, supply: 40, filled: 33, leadAvg: 9, cycleAvg: 14, qualityRate: 74, releases: 6, benchCost: 235000 },
+      { wk: "Sem 2", demand: 45, supply: 40, filled: 33, leadAvg: 9,  cycleAvg: 14, qualityRate: 74, releases: 6, benchCost: 235000 },
       { wk: "Sem 3", demand: 47, supply: 44, filled: 35, leadAvg: 11, cycleAvg: 16, qualityRate: 75, releases: 8, benchCost: 250000 },
       { wk: "Sem 4", demand: 50, supply: 46, filled: 37, leadAvg: 10, cycleAvg: 15, qualityRate: 76, releases: 5, benchCost: 245000 },
-      { wk: "Sem 5", demand: 48, supply: 45, filled: 36, leadAvg: 9, cycleAvg: 14, qualityRate: 77, releases: 6, benchCost: 242000 },
-      { wk: "Sem 6", demand: 51, supply: 49, filled: 39, leadAvg: 8, cycleAvg: 13, qualityRate: 79, releases: 7, benchCost: 238000 },
-      { wk: "Sem 7", demand: 49, supply: 47, filled: 38, leadAvg: 9, cycleAvg: 13, qualityRate: 80, releases: 6, benchCost: 232000 },
-      { wk: "Sem 8", demand: 46, supply: 45, filled: 35, leadAvg: 8, cycleAvg: 12, qualityRate: 81, releases: 7, benchCost: 228000 },
-      { wk: "Sem 9", demand: 44, supply: 46, filled: 34, leadAvg: 9, cycleAvg: 12, qualityRate: 82, releases: 8, benchCost: 225000 },
-      { wk: "Sem 10", demand: 43, supply: 44, filled: 33, leadAvg: 9, cycleAvg: 12, qualityRate: 83, releases: 6, benchCost: 220000 },
-      { wk: "Sem 11", demand: 41, supply: 45, filled: 32, leadAvg: 8, cycleAvg: 11, qualityRate: 84, releases: 5, benchCost: 218000 },
-      { wk: "Sem 12", demand: 40, supply: 44, filled: 31, leadAvg: 8, cycleAvg: 11, qualityRate: 85, releases: 6, benchCost: 216000 },
+      { wk: "Sem 5", demand: 48, supply: 45, filled: 36, leadAvg: 9,  cycleAvg: 14, qualityRate: 77, releases: 6, benchCost: 242000 },
+      { wk: "Sem 6", demand: 51, supply: 49, filled: 39, leadAvg: 8,  cycleAvg: 13, qualityRate: 79, releases: 7, benchCost: 238000 },
+      { wk: "Sem 7", demand: 49, supply: 47, filled: 38, leadAvg: 9,  cycleAvg: 13, qualityRate: 80, releases: 6, benchCost: 232000 },
+      { wk: "Sem 8", demand: 46, supply: 45, filled: 35, leadAvg: 8,  cycleAvg: 12, qualityRate: 81, releases: 7, benchCost: 228000 },
+      { wk: "Sem 9", demand: 44, supply: 46, filled: 34, leadAvg: 9,  cycleAvg: 12, qualityRate: 82, releases: 8, benchCost: 225000 },
+      { wk: "Sem 10", demand: 43, supply: 44, filled: 33, leadAvg: 9,  cycleAvg: 12, qualityRate: 83, releases: 6, benchCost: 220000 },
+      { wk: "Sem 11", demand: 41, supply: 45, filled: 32, leadAvg: 8,  cycleAvg: 11, qualityRate: 84, releases: 5, benchCost: 218000 },
+      { wk: "Sem 12", demand: 40, supply: 44, filled: 31, leadAvg: 8,  cycleAvg: 11, qualityRate: 85, releases: 6, benchCost: 216000 },
     ];
 
     const demandaConocimiento = [
@@ -156,7 +141,7 @@
       { mes: "Nov", Banca: 150000, Finiquito: 18000 },
       { mes: "Dic", Banca: 130000, Finiquito: 15000 },
       { mes: "Ene", Banca: 115000, Finiquito: 12000 },
-      { mes: "Feb", Banca: 80000, Finiquito: 6000 },
+      { mes: "Feb", Banca: 80000,  Finiquito: 6000 },
     ];
 
     const funnelEmbudo = [
@@ -175,263 +160,141 @@
       { name: "No pude asignar", value: 10 },
     ];
 
-    const pieColors = ["#76BC21", "#2E7D32", "#1976D2", "#F44336", "#9C27B0", "#FF9800"];
-
     // helpers
-    const money = (n) => n.toLocaleString("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 });
-    const pct = (n,d) => (d === 0 ? 0 : Math.round((n/d)*100));
+    const fmtMoney = (n) => n.toLocaleString("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 });
+    const pct = (n,d) => (d===0?0:Math.round(n/d*100));
 
-    // Derived series
-    const totals = weekly.reduce((acc, d) => ({
-      demand: acc.demand + d.demand,
-      supply: acc.supply + d.supply,
-      filled: acc.filled + d.filled,
-      leadAvg: acc.leadAvg + d.leadAvg,
-      cycleAvg: acc.cycleAvg + d.cycleAvg,
-      quality: acc.quality + d.qualityRate,
-      releases: acc.releases + d.releases,
-      benchCost: acc.benchCost + d.benchCost
-    }), { demand:0, supply:0, filled:0, leadAvg:0, cycleAvg:0, quality:0, releases:0, benchCost:0 });
+    const totals = weekly.reduce((a,d)=>({demand:a.demand+d.demand,supply:a.supply+d.supply,filled:a.filled+d.filled,lead:a.lead+d.leadAvg,cycle:a.cycle+d.cycleAvg,quality:a.quality+d.qualityRate,bench:a.bench+d.benchCost}), {demand:0,supply:0,filled:0,lead:0,cycle:0,quality:0,bench:0});
+    const kpis = {
+      fillRate: pct(totals.filled, totals.demand),
+      lead: Math.round(totals.lead/weekly.length),
+      cycle: Math.round(totals.cycle/weekly.length),
+      bench: totals.bench,
+    };
 
-    totals.leadAvg = Math.round(totals.leadAvg / weekly.length);
-    totals.cycleAvg = Math.round(totals.cycleAvg / weekly.length);
-    totals.quality = Math.round(totals.quality / weekly.length);
-    const fillRate = pct(totals.filled, totals.demand);
-
-    const fillRateTrend = weekly.map(d => ({ wk: d.wk, Reqs: d.demand, Cubiertas: d.filled, Pendientes: Math.max(d.demand - d.filled, 0) }));
-    const leadCycleTime = weekly.map(d => ({ wk: d.wk, lead: d.leadAvg, cycle: d.cycleAvg }));
-    const demandaVsOferta = weekly.map(d => ({ wk: d.wk, demanda: d.demand, oferta: d.supply, cubiertos: d.filled }));
-
-    // Components
-    const Card = ({ title, right, children, className, contentClass }) => (
-      <div className={"card " + (className || "")}>
-        <div className="card-header">
-          <h3>{title}</h3>
-          <div>{right || null}</div>
+    // render KPI cards
+    const kpiRoot = document.getElementById('kpis');
+    const kpiCard = (title, value, sub) => `
+      <div class="card kpi">
+        <div class="card-header"><h3>${title}</h3></div>
+        <div class="card-content">
+          <div class="kpi-value">${value}</div>
+          <div class="kpi-sub">${sub||""}</div>
         </div>
-        <div className={"card-content " + (contentClass || "")}>{children}</div>
-      </div>
-    );
+      </div>`;
+    kpiRoot.innerHTML = [
+      kpiCard("Fill rate", kpis.fillRate + "%", `${totals.filled} de ${totals.demand} requerimientos cubiertos`),
+      kpiCard("Lead time promedio", kpis.lead + " d", "Solicitud → primer envío"),
+      kpiCard("Cycle time promedio", kpis.cycle + " d", "Solicitud → asignación"),
+      kpiCard("Costo de banca", fmtMoney(kpis.bench), "Acumulado periodo"),
+    ].join("");
 
-    function App(){
-      return (
-        <>
-          {/* KPIs */}
-          <div className="grid kpi">
-            <div className="card kpi">
-              <div className="card-header"><h3>Fill rate</h3></div>
-              <div className="card-content">
-                <div className="kpi-value">{fillRate}%</div>
-                <div className="kpi-sub">{totals.filled} de {totals.demand} requerimientos cubiertos</div>
-              </div>
-            </div>
+    // common options
+    const commonOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' }, tooltip: { enabled: true } }, scales: { x: { grid: { color: '#f3f4f6' } }, y: { grid: { color: '#f3f4f6' } } } };
 
-            <div className="card kpi">
-              <div className="card-header"><h3>Lead time promedio</h3></div>
-              <div className="card-content">
-                <div className="kpi-value">{totals.leadAvg} d</div>
-                <div className="kpi-sub">Solicitud → primer envío</div>
-              </div>
-            </div>
+    // Funnel
+    new Chart(document.getElementById('chartFunnel'), {
+      type: 'funnel',
+      data: { labels: funnelEmbudo.map(d=>d.name), datasets: [{ data: funnelEmbudo.map(d=>d.value), backgroundColor: ['#76BC21','#2E7D32','#1976D2','#F44336','#9C27B0','#FF9800'] }] },
+      options: { sort: 'desc', ...commonOptions }
+    });
 
-            <div className="card kpi">
-              <div className="card-header"><h3>Cycle time promedio</h3></div>
-              <div className="card-content">
-                <div className="kpi-value">{totals.cycleAvg} d</div>
-                <div className="kpi-sub">Solicitud → asignación</div>
-              </div>
-            </div>
+    // Calidad (donut)
+    new Chart(document.getElementById('chartCalidad'), {
+      type: 'doughnut',
+      data: { labels: calidadCategorias.map(d=>d.name), datasets: [{ data: calidadCategorias.map(d=>d.value), backgroundColor: ['#76BC21','#2E7D32','#1976D2','#F44336'] }] },
+      options: { ...commonOptions, cutout: '60%' }
+    });
 
-            <div className="card kpi">
-              <div className="card-header"><h3>Costo de banca</h3></div>
-              <div className="card-content">
-                <div className="kpi-value">{money(totals.benchCost)}</div>
-                <div className="kpi-sub">Acumulado periodo</div>
-              </div>
-            </div>
-          </div>
+    // Demanda vs Oferta (líneas)
+    new Chart(document.getElementById('chartDemandaOferta'), {
+      type: 'line',
+      data: {
+        labels: weekly.map(d=>d.wk),
+        datasets: [
+          { label: 'Demanda', data: weekly.map(d=>d.demand), borderColor: '#F44336', tension: 0.3 },
+          { label: 'Oferta', data: weekly.map(d=>d.supply), borderColor: '#1976D2', tension: 0.3 },
+          { label: 'Cubiertos', data: weekly.map(d=>d.filled), borderColor: '#76BC21', tension: 0.3 },
+        ]
+      },
+      options: commonOptions
+    });
 
-          {/* Funnel + Calidad + Demanda vs Oferta */}
-          <div className="grid row-3" style={{marginTop:16}}>
-            <Card title="Funnel de Staffing">
-              <ResponsiveContainer width="100%" height="100%">
-                <FunnelChart>
-                  <Tooltip/>
-                  <Funnel dataKey="value" data={funnelEmbudo}>
-                    {funnelEmbudo.map((e,i)=>(<Cell key={i} fill={pieColors[i % pieColors.length]} />))}
-                    <LabelList position="right" fill="#111827" stroke="none" dataKey="name" />
-                    <LabelList position="center" fill="#fff" stroke="none" dataKey="value" />
-                  </Funnel>
-                </FunnelChart>
-              </ResponsiveContainer>
-            </Card>
+    // Fill rate trend
+    new Chart(document.getElementById('chartFillTrend'), {
+      type: 'line',
+      data: {
+        labels: weekly.map(d=>d.wk),
+        datasets: [
+          { label: 'Reqs', data: weekly.map(d=>d.demand), borderColor: '#1976D2', tension: 0.3 },
+          { label: 'Cubiertas', data: weekly.map(d=>d.filled), borderColor: '#76BC21', tension: 0.3 },
+          { label: 'Pendientes', data: weekly.map(d=>Math.max(d.demand-d.filled,0)), borderColor: '#F44336', tension: 0.3 },
+        ]
+      },
+      options: commonOptions
+    });
 
-            <Card title="Staffing de calidad">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={calidadCategorias} dataKey="value" nameKey="name" innerRadius={60} outerRadius={90}>
-                    {calidadCategorias.map((_, i) => (<Cell key={i} fill={pieColors[i % pieColors.length]} />))}
-                  </Pie>
-                  <Tooltip/>
-                  <Legend/>
-                </PieChart>
-              </ResponsiveContainer>
-            </Card>
+    // Lead vs Cycle + reference line
+    new Chart(document.getElementById('chartLeadCycle'), {
+      type: 'line',
+      data: {
+        labels: weekly.map(d=>d.wk),
+        datasets: [
+          { label: 'Lead time', data: weekly.map(d=>d.leadAvg), borderColor: '#1976D2', tension: 0.3 },
+          { label: 'Cycle time', data: weekly.map(d=>d.cycleAvg), borderColor: '#76BC21', tension: 0.3 },
+        ]
+      },
+      options: { ...commonOptions, plugins: { ...commonOptions.plugins, annotation: { annotations: { line1: { type: 'line', yMin: 10, yMax: 10, borderColor: '#9CA3AF', borderDash: [4,4], label: { display: true, content: 'LT objetivo 10 d', position: 'end' } } } } } }
+    });
 
-            <Card title="Demanda vs Oferta">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={demandaVsOferta} margin={{ left: 10, right: 20, top: 10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="wk" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="demanda" stroke="#F44336" strokeWidth={2} />
-                  <Line type="monotone" dataKey="oferta" stroke="#1976D2" strokeWidth={2} />
-                  <Line type="monotone" dataKey="cubiertos" stroke="#76BC21" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
-            </Card>
-          </div>
+    // Conocimiento (agrupadas)
+    new Chart(document.getElementById('chartConocimiento'), {
+      type: 'bar',
+      data: {
+        labels: demandaConocimiento.map(d=>d.conoc),
+        datasets: [
+          { label: 'Básico', data: demandaConocimiento.map(d=>d.Basico), backgroundColor: '#9CA3AF' },
+          { label: 'Intermedio', data: demandaConocimiento.map(d=>d.Intermedio), backgroundColor: '#1976D2' },
+          { label: 'Avanzado', data: demandaConocimiento.map(d=>d.Avanzado), backgroundColor: '#2E7D32' },
+        ]
+      },
+      options: commonOptions
+    });
 
-          {/* Fill Rate trend + Lead / Cycle */}
-          <div className="grid row-2" style={{marginTop:16}}>
-            <Card title="Fill rate (tendencia)">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={fillRateTrend}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="wk" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="Reqs" stroke="#1976D2" strokeWidth={2} />
-                  <Line type="monotone" dataKey="Cubiertas" stroke="#76BC21" strokeWidth={2} />
-                  <Line type="monotone" dataKey="Pendientes" stroke="#F44336" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
-            </Card>
+    // Liberaciones por rol
+    new Chart(document.getElementById('chartLiberacionesRol'), {
+      type: 'bar',
+      data: { labels: liberacionesRol.map(d=>d.rol), datasets: [{ label: 'Liberaciones', data: liberacionesRol.map(d=>d.liberaciones), backgroundColor: '#F44336' }] },
+      options: commonOptions
+    });
 
-            <Card title="Lead time / Cycle time">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={leadCycleTime}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="wk" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <ReferenceLine y={10} stroke="#9CA3AF" strokeDasharray="4 4" label={{ value: "LT objetivo 10 d", position: "right" }} />
-                  <Line type="monotone" dataKey="lead" stroke="#1976D2" strokeWidth={2} name="Lead time" />
-                  <Line type="monotone" dataKey="cycle" stroke="#76BC21" strokeWidth={2} name="Cycle time" />
-                </LineChart>
-              </ResponsiveContainer>
-            </Card>
-          </div>
+    // Liberaciones por periodo
+    new Chart(document.getElementById('chartLiberacionesPeriodo'), {
+      type: 'bar',
+      data: { labels: liberacionesPeriodo.map(d=>d.dias + ' d'), datasets: [{ label: 'Liberaciones', data: liberacionesPeriodo.map(d=>d.valor), backgroundColor: '#F44336' }] },
+      options: commonOptions
+    });
 
-          {/* Demanda por conocimiento + Liberaciones por rol */}
-          <div className="grid row-3" style={{marginTop:16}}>
-            <Card title="Demanda por conocimiento y seniority" className="span-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={demandaConocimiento} margin={{ left: 10, right: 20, top: 10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="conoc" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="Basico" fill="#9CA3AF" />
-                  <Bar dataKey="Intermedio" fill="#1976D2" />
-                  <Bar dataKey="Avanzado" fill="#2E7D32" />
-                </BarChart>
-              </ResponsiveContainer>
-            </Card>
+    // Aging
+    new Chart(document.getElementById('chartAging'), {
+      type: 'bar',
+      data: { labels: agingEtapas.map(d=>d.etapa), datasets: [{ label: 'Días', data: agingEtapas.map(d=>d.dias), backgroundColor: '#76BC21' }] },
+      options: commonOptions
+    });
 
-            <Card title="Liberaciones por rol">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={liberacionesRol}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="rol" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="liberaciones" fill="#F44336" />
-                </BarChart>
-              </ResponsiveContainer>
-            </Card>
-          </div>
+    // Origen cobertura (horizontal)
+    new Chart(document.getElementById('chartOrigen'), {
+      type: 'bar',
+      data: { labels: origenCoberturaSimple.map(d=>d.tipo), datasets: [{ label: '%', data: origenCoberturaSimple.map(d=>d.porcentaje), backgroundColor: ['#2E7D32','#1976D2'] }] },
+      options: { ...commonOptions, indexAxis: 'y', scales: { x: { ...commonOptions.scales.x, max: 100 } } }
+    });
 
-          {/* Liberaciones periodo + Aging + Origen cobertura */}
-          <div className="grid row-3" style={{marginTop:16}}>
-            <Card title="Liberaciones por periodo">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={liberacionesPeriodo}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="dias" tickFormatter={(v)=> v + ' d'} />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="valor" fill="#F44336" />
-                </BarChart>
-              </ResponsiveContainer>
-            </Card>
-
-            <Card title="Aging de etapas (días)">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={agingEtapas} margin={{ left: 10, right: 10, top: 10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="etapa" interval={0} />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="dias">
-                    {agingEtapas.map((_, i) => (<Cell key={i} fill={pieColors[i % pieColors.length]} />))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </Card>
-
-            <Card title="Origen de la cobertura">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={origenCoberturaSimple} layout="vertical" margin={{ left: 30, right: 20, top: 10, bottom: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => v + '%'} />
-                  <YAxis type="category" dataKey="tipo" />
-                  <Tooltip formatter={(v) => v + '%'} />
-                  <Bar dataKey="porcentaje">
-                    {origenCoberturaSimple.map((_, i) => (<Cell key={i} fill={i === 0 ? "#2E7D32" : "#1976D2"} />))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </Card>
-          </div>
-
-          {/* Costo banca + finiquito */}
-          <div style={{marginTop:16}}>
-            <Card title="Costo de banca + finiquito">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={costoBancaFiniquito}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="mes" />
-                  <YAxis />
-                  <Tooltip formatter={(v)=> money(v)} />
-                  <Legend />
-                  <Bar dataKey="Banca" stackId="x" fill="#1976D2" />
-                  <Bar dataKey="Finiquito" stackId="x" fill="#F44336" />
-                </BarChart>
-              </ResponsiveContainer>
-            </Card>
-          </div>
-        </>
-      );
-    }
-
-    ReactDOM.createRoot(document.getElementById("kpis")).render(<div/>); // placeholder to keep structure
-
-    // Render sections
-    const rootKpis = ReactDOM.createRoot(document.getElementById("kpis"));
-    const rootRowTop = ReactDOM.createRoot(document.getElementById("rowTop"));
-    const rootRowMid1 = ReactDOM.createRoot(document.getElementById("rowMid1"));
-    const rootRowMid2 = ReactDOM.createRoot(document.getElementById("rowMid2"));
-    const rootRowMid3 = ReactDOM.createRoot(document.getElementById("rowMid3"));
-    const rootBottom = ReactDOM.createRoot(document.getElementById("rowBottom"));
-
-    // Instead of rendering piecewise, render the whole App into main container.
-    ReactDOM.createRoot(document.querySelector("main .container, main.container")).render(<App />);
+    // Bench + Finiquito (stacked)
+    new Chart(document.getElementById('chartBench'), {
+      type: 'bar',
+      data: { labels: costoBancaFiniquito.map(d=>d.mes), datasets: [{ label:'Banca', data:costoBancaFiniquito.map(d=>d.Banca), backgroundColor:'#1976D2' }, { label:'Finiquito', data:costoBancaFiniquito.map(d=>d.Finiquito), backgroundColor:'#F44336' }] },
+      options: { ...commonOptions, scales: { x: { stacked: true, grid: { color: '#f3f4f6' } }, y: { stacked: true, grid: { color: '#f3f4f6' } } } }
+    });
   </script>
 </body>
 </html>
